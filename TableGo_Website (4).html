@@ -1,0 +1,1753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Zenvy — The Smart Car Table for Pakistan</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --cream: #F7F3EE;
+    --warm-white: #B8FFB8;
+    --ink: #1A1611;
+    --ink-light: #4A4540;
+    --ink-muted: #8A867F;
+    --amber: #C97B2E;
+    --amber-light: #F0C068;
+    --amber-pale: #FDF3E0;
+    --rust: #A04020;
+    --forest: #2D4A35;
+    --forest-light: #4A7A58;
+    --border: rgba(26,22,17,0.12);
+    --border-strong: rgba(26,22,17,0.25);
+    --section-gap: 7rem;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 4px 32px rgba(26,22,17,0.08);
+    --shadow-md: 0 8px 48px rgba(26,22,17,0.14);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; font-size: 16px; }
+  body {
+    font-family: var(--font-body);
+    background: var(--warm-white);
+    color: var(--ink);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  /* ======= EDITABLE CONTENT SYSTEM ======= */
+  [contenteditable="true"] {
+    outline: none;
+    cursor: text;
+    border-radius: 4px;
+    transition: background 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  [contenteditable="true"]:hover {
+    background: rgba(201,123,46,0.07);
+    box-shadow: 0 0 0 2px rgba(201,123,46,0.25);
+  }
+  [contenteditable="true"]:focus {
+    background: rgba(201,123,46,0.1);
+    box-shadow: 0 0 0 2px var(--amber);
+  }
+  .edit-badge {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--ink);
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 18px;
+    border-radius: 99px;
+    border: none;
+    cursor: pointer;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    transition: background 0.2s;
+  }
+  .edit-badge.editing {
+    background: var(--forest);
+  }
+  .edit-badge svg { width: 16px; height: 16px; }
+  .edit-hint {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--amber);
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 20px;
+    border-radius: 99px;
+    z-index: 998;
+    display: none;
+    white-space: nowrap;
+  }
+  body.editing-mode .edit-hint { display: block; }
+  body:not(.editing-mode) [contenteditable] { pointer-events: none; }
+  body.editing-mode [contenteditable] { pointer-events: auto; }
+
+  /* ======= NAV ======= */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 0 2.5rem;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(253,250,247,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ink);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+  .nav-logo span { color: var(--amber); }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    list-style: none;
+  }
+  .nav-links a {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-light);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--amber); }
+  .nav-cta {
+    background: var(--ink);
+    color: #fff !important;
+    padding: 10px 22px;
+    border-radius: 99px;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    transition: background 0.2s !important;
+  }
+  .nav-cta:hover { background: var(--amber) !important; color: #fff !important; }
+  .nav-hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    padding: 4px;
+    background: none;
+    border: none;
+  }
+  .nav-hamburger span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--ink);
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .nav-hamburger { display: flex; }
+    .nav-links.open {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      top: 68px; left: 0; right: 0;
+      background: var(--warm-white);
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      gap: 1.25rem;
+    }
+  }
+
+  /* ======= HERO ======= */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 9rem 2.5rem 5rem;
+    gap: 4rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amber);
+    background: var(--amber-pale);
+    border: 1px solid rgba(201,123,46,0.2);
+    padding: 6px 14px;
+    border-radius: 99px;
+    margin-bottom: 1.5rem;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 6px; height: 6px;
+    background: var(--amber);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.6rem, 4.5vw, 4.2rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    font-weight: 900;
+    margin-bottom: 1.5rem;
+    color: var(--ink);
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--amber);
+  }
+  .hero-sub {
+    font-size: 1.1rem;
+    color: var(--ink-light);
+    max-width: 480px;
+    margin-bottom: 2.5rem;
+    line-height: 1.8;
+  }
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ink);
+    color: #fff;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 15px;
+    padding: 14px 30px;
+    border-radius: 99px;
+    text-decoration: none;
+    border: 2px solid var(--ink);
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+  .btn-primary:hover { background: var(--amber); border-color: var(--amber); }
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 15px;
+    padding: 14px 24px;
+    border-radius: 99px;
+    text-decoration: none;
+    border: 2px solid var(--border-strong);
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+  .btn-ghost:hover { border-color: var(--ink); background: var(--cream); }
+  .hero-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+  .hero-stat-val {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .hero-stat-label {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-top: 2px;
+  }
+  .hero-visual {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hero-card {
+    width: 100%;
+    max-width: 460px;
+    aspect-ratio: 4/3;
+    background: var(--cream);
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .product-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2rem;
+  }
+  .product-icon-large {
+    width: 120px;
+    height: 80px;
+    background: var(--ink);
+    border-radius: 12px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 8px;
+  }
+  .product-icon-large::before {
+    content: '';
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 6px;
+    background: #444;
+    border-radius: 3px;
+  }
+  .product-icon-large::after {
+    content: '';
+    width: 40px;
+    height: 3px;
+    background: var(--amber);
+    border-radius: 2px;
+  }
+  .hero-badge {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    box-shadow: var(--shadow);
+  }
+  .hero-badge-price {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--forest);
+  }
+  .hero-badge-label {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+  .hero-badge2 {
+    position: absolute;
+    top: 1.5rem;
+    right: -1rem;
+    background: var(--amber);
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: var(--shadow);
+  }
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; padding-top: 7rem; }
+    .hero-visual { order: -1; }
+    .hero-card { max-width: 100%; }
+  }
+
+  /* ======= SECTION BASE ======= */
+  section { padding: var(--section-gap) 2.5rem; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 0.75rem;
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 3vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    color: var(--ink);
+    margin-bottom: 1rem;
+  }
+  .section-sub {
+    font-size: 1.05rem;
+    color: var(--ink-light);
+    max-width: 560px;
+    line-height: 1.8;
+  }
+
+  /* ======= PROBLEM ======= */
+  .problem-section {
+    background: var(--ink);
+    color: #fff;
+    border-radius: 32px;
+    margin: 0 2rem;
+    padding: 5rem 4rem;
+  }
+  .problem-section .section-label { color: var(--amber-light); }
+  .problem-section .section-title { color: #fff; }
+  .problem-section .section-sub { color: rgba(255,255,255,0.65); }
+  .problem-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: 3.5rem;
+  }
+  .problem-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius);
+    padding: 2rem;
+    transition: background 0.2s;
+  }
+  .problem-card:hover { background: rgba(255,255,255,0.08); }
+  .problem-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(201,123,46,0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+    font-size: 1.4rem;
+  }
+  .problem-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 0.5rem;
+  }
+  .problem-card p { font-size: 14px; color: rgba(255,255,255,0.55); line-height: 1.7; }
+  @media (max-width: 768px) {
+    .problem-grid { grid-template-columns: 1fr; }
+    .problem-section { margin: 0 1rem; padding: 3rem 2rem; }
+  }
+
+  /* ======= SOLUTION / PRODUCT ======= */
+  .solution-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+  .solution-features {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    margin-top: 2.5rem;
+  }
+  .sol-feat {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+  }
+  .sol-feat-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    background: var(--amber-pale);
+    border: 1px solid rgba(201,123,46,0.25);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+  .sol-feat-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+    margin-bottom: 3px;
+  }
+  .sol-feat-desc {
+    font-size: 14px;
+    color: var(--ink-muted);
+    line-height: 1.6;
+  }
+  .solution-visual {
+    background: var(--cream);
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    aspect-ratio: 3/4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 2rem;
+    gap: 1rem;
+  }
+  .solution-visual-img {
+    width: 80%;
+    height: 55%;
+    background: var(--ink);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .solution-visual-img::before {
+    content: '';
+    position: absolute;
+    top: -20px; left: 50%;
+    transform: translateX(-50%);
+    width: 60px; height: 8px;
+    background: #555;
+    border-radius: 4px;
+  }
+  .solution-visual-img::after {
+    content: 'PorTable';
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--amber-light);
+    letter-spacing: -0.02em;
+  }
+  .solution-tag {
+    position: absolute;
+    top: 1.5rem; right: 1.5rem;
+    background: var(--forest);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 5px 10px;
+    border-radius: 99px;
+    text-transform: uppercase;
+  }
+  @media (max-width: 768px) {
+    .solution-wrap { grid-template-columns: 1fr; gap: 3rem; }
+  }
+
+  /* ======= HOW IT WORKS ======= */
+  .how-bg { background: var(--cream); }
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: 3.5rem;
+    position: relative;
+  }
+  .steps-grid::before {
+    content: '';
+    position: absolute;
+    top: 36px;
+    left: calc(16.67% + 1rem);
+    right: calc(16.67% + 1rem);
+    height: 2px;
+    background: linear-gradient(to right, var(--amber), transparent, var(--amber));
+    opacity: 0.3;
+  }
+  .step-card {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+    transition: box-shadow 0.25s;
+  }
+  .step-card:hover { box-shadow: var(--shadow-md); }
+  .step-num {
+    width: 48px;
+    height: 48px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 auto 1.25rem;
+  }
+  .step-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .step-card p { font-size: 14px; color: var(--ink-muted); line-height: 1.6; }
+  @media (max-width: 768px) {
+    .steps-grid { grid-template-columns: 1fr; }
+    .steps-grid::before { display: none; }
+  }
+
+  /* ======= USE CASES ======= */
+  .usecases-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+  .usecase-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem 2rem 2rem;
+    background: var(--warm-white);
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+    transition: box-shadow 0.25s, border-color 0.25s;
+  }
+  .usecase-card:hover {
+    border-color: var(--amber);
+    box-shadow: var(--shadow);
+  }
+  .usecase-icon {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    background: var(--amber-pale);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+  .usecase-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .usecase-desc { font-size: 14px; color: var(--ink-muted); line-height: 1.7; }
+  @media (max-width: 700px) {
+    .usecases-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ======= REVIEWS ======= */
+  .reviews-bg { background: var(--cream); }
+  .reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+  .review-card {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: box-shadow 0.25s;
+  }
+  .review-card:hover { box-shadow: var(--shadow); }
+  .review-stars { color: var(--amber); font-size: 14px; letter-spacing: 2px; }
+  .review-text { font-size: 14px; color: var(--ink-light); line-height: 1.75; font-style: italic; flex: 1; }
+  .review-author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+  .review-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--amber);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .review-name { font-weight: 600; font-size: 13px; }
+  .review-role { font-size: 12px; color: var(--ink-muted); }
+  @media (max-width: 768px) {
+    .reviews-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ======= PRICING ======= */
+  .pricing-wrap {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-top: 3rem;
+  }
+  .pricing-card {
+    background: var(--warm-white);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 2.5rem;
+    width: 300px;
+    position: relative;
+    transition: box-shadow 0.25s;
+  }
+  .pricing-card:hover { box-shadow: var(--shadow-md); }
+  .pricing-card.featured {
+    border-color: var(--amber);
+    background: var(--ink);
+    color: #fff;
+  }
+  .pricing-featured-badge {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--amber);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 5px 16px;
+    border-radius: 99px;
+    white-space: nowrap;
+  }
+  .pricing-name {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .pricing-desc { font-size: 13px; color: var(--ink-muted); margin-bottom: 1.5rem; }
+  .pricing-card.featured .pricing-desc { color: rgba(255,255,255,0.5); }
+  .pricing-price {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 1.75rem;
+  }
+  .pricing-card.featured .pricing-price { color: #fff; }
+  .pricing-price .currency { font-size: 1rem; font-weight: 500; }
+  .pricing-price .period { font-size: 0.9rem; font-weight: 400; color: var(--ink-muted); }
+  .pricing-card.featured .pricing-price .period { color: rgba(255,255,255,0.4); }
+  .pricing-features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+  .pricing-features li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+  }
+  .pricing-features li::before {
+    content: '✓';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: rgba(45,74,53,0.1);
+    border-radius: 50%;
+    font-size: 11px;
+    color: var(--forest);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .pricing-card.featured .pricing-features li::before {
+    background: rgba(201,123,46,0.2);
+    color: var(--amber-light);
+  }
+  .pricing-card.featured .pricing-features li { color: rgba(255,255,255,0.8); }
+  .btn-primary-sm {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: var(--ink);
+    color: #fff;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 24px;
+    border-radius: 99px;
+    text-decoration: none;
+    border: 2px solid var(--ink);
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+  .btn-primary-sm:hover { background: var(--amber); border-color: var(--amber); }
+  .pricing-card.featured .btn-primary-sm {
+    background: var(--amber);
+    border-color: var(--amber);
+  }
+  .pricing-card.featured .btn-primary-sm:hover { background: #fff; color: var(--ink); border-color: #fff; }
+
+  /* ======= FAQ ======= */
+  .faq-list { max-width: 700px; margin: 3rem auto 0; }
+  .faq-item {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+  .faq-item:hover { box-shadow: var(--shadow); }
+  .faq-question {
+    width: 100%;
+    background: var(--warm-white);
+    border: none;
+    padding: 1.25rem 1.5rem;
+    text-align: left;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    transition: background 0.2s;
+  }
+  .faq-question:hover { background: var(--cream); }
+  .faq-arrow {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    background: var(--cream);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: transform 0.3s;
+  }
+  .faq-item.open .faq-arrow { transform: rotate(180deg); }
+  .faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+  }
+  .faq-item.open .faq-answer { max-height: 300px; }
+  .faq-answer-inner {
+    padding: 0 1.5rem 1.25rem;
+    font-size: 14px;
+    color: var(--ink-light);
+    line-height: 1.8;
+  }
+
+  /* ======= CTA ======= */
+  .cta-section {
+    background: var(--forest);
+    border-radius: 32px;
+    margin: 0 2rem 4rem;
+    padding: 5rem 3rem;
+    text-align: center;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    top: -80px; left: -80px;
+    width: 300px; height: 300px;
+    background: rgba(201,123,46,0.15);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .cta-section::after {
+    content: '';
+    position: absolute;
+    bottom: -100px; right: -60px;
+    width: 350px; height: 350px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .cta-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--amber-light);
+    margin-bottom: 1rem;
+  }
+  .cta-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: #fff;
+    margin-bottom: 1.25rem;
+    position: relative;
+    z-index: 1;
+  }
+  .cta-sub {
+    font-size: 1.05rem;
+    color: rgba(255,255,255,0.7);
+    max-width: 500px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.8;
+    position: relative;
+    z-index: 1;
+  }
+  .cta-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+  }
+  .btn-white {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    color: var(--forest);
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 15px;
+    padding: 14px 32px;
+    border-radius: 99px;
+    text-decoration: none;
+    cursor: pointer;
+    border: 2px solid #fff;
+    transition: all 0.25s;
+  }
+  .btn-white:hover { background: var(--amber); color: #fff; border-color: var(--amber); }
+  .btn-outline-white {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    color: rgba(255,255,255,0.8);
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 15px;
+    padding: 14px 28px;
+    border-radius: 99px;
+    text-decoration: none;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.3);
+    transition: all 0.25s;
+  }
+  .btn-outline-white:hover { border-color: #fff; color: #fff; }
+
+  /* ======= CONTACT ======= */
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 4rem;
+    align-items: start;
+    margin-top: 3rem;
+  }
+  .contact-info h3 {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  .contact-info p {
+    font-size: 14px;
+    color: var(--ink-muted);
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+  }
+  .contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 1rem;
+  }
+  .contact-item-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--amber-pale);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .contact-item-text { font-size: 14px; }
+  .contact-item-label { font-weight: 600; color: var(--ink); }
+  .contact-item-val { color: var(--ink-muted); }
+  .contact-form {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .form-field { display: flex; flex-direction: column; gap: 6px; }
+  .form-field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-light);
+  }
+  .form-field input,
+  .form-field textarea,
+  .form-field select {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--warm-white);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+  .form-field input:focus,
+  .form-field textarea:focus,
+  .form-field select:focus { border-color: var(--amber); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 768px) {
+    .contact-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+
+  /* ======= FOOTER ======= */
+  footer {
+    background: var(--ink);
+    color: rgba(255,255,255,0.6);
+    padding: 3rem 2.5rem 2rem;
+  }
+  .footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  .footer-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .footer-logo {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+  .footer-logo span { color: var(--amber-light); }
+  .footer-tagline { font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+  .footer-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+  .footer-links a {
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--amber-light); }
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .footer-badge {
+    background: rgba(201,123,46,0.15);
+    border: 1px solid rgba(201,123,46,0.2);
+    color: var(--amber-light);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 99px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ======= ANIMATIONS ======= */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .fade-in:nth-child(2) { transition-delay: 0.1s; }
+  .fade-in:nth-child(3) { transition-delay: 0.2s; }
+  .fade-in:nth-child(4) { transition-delay: 0.3s; }
+
+  /* ======= ABOUT ======= */
+  .about-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+  .about-values {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-top: 2rem;
+  }
+  .about-val {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1.25rem;
+  }
+  .about-val-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .about-val-title { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+  .about-val-desc { font-size: 13px; color: var(--ink-muted); line-height: 1.5; }
+  .about-visual {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .about-stat {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .about-stat:last-child { border-bottom: none; padding-bottom: 0; }
+  .about-stat-num {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--amber);
+    min-width: 60px;
+  }
+  .about-stat-text { font-size: 14px; color: var(--ink-light); line-height: 1.5; }
+  @media (max-width: 768px) {
+    .about-wrap { grid-template-columns: 1fr; }
+    .about-values { grid-template-columns: 1fr; }
+  }
+
+  /* Scroll target offset for fixed nav */
+  [id] { scroll-margin-top: 80px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#home" class="nav-logo">Zenvy</a>
+  <button class="nav-hamburger" id="hamburger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="navlinks">
+    <li><a href="#about">About</a></li>
+    <li><a href="#product">Product</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#order" class="nav-cta">Order Now →</a></li>
+  </ul>
+</nav>
+
+<div class="edit-hint">✏️ Click any text to edit it</div>
+
+<!-- HERO -->
+<div id="home" style="max-width:1200px;margin:0 auto;">
+  <div class="hero">
+    <div class="hero-content">
+      <div class="hero-eyebrow" contenteditable="false">New in Pakistan</div>
+      <h1 contenteditable="false">Your Car, Now a <em>Mobile Office</em> & Dining Space</h1>
+      <p class="hero-sub" contenteditable="false">PorTable is the first fold-flat car table designed for Pakistan — strong plywood build, raised edges to stop spills, attaches to your headrest in seconds. Under PKR 400.</p>
+      <div class="hero-actions">
+        <a href="#order" class="btn-primary">Order Now — PKR 350 →</a>
+        <a href="#product" class="btn-ghost">See Product</a>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-val" contenteditable="false">7/10</div>
+          <div class="hero-stat-label">Would buy it instantly</div>
+        </div>
+        <div>
+          <div class="hero-stat-val" contenteditable="false">PKR 350</div>
+          <div class="hero-stat-label">All-in price, no extras</div>
+        </div>
+        <div>
+          <div class="hero-stat-val" contenteditable="false">100%</div>
+          <div class="hero-stat-label">Local materials & craft</div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-card" style="display:flex;align-items:center;justify-content:center;background:var(--cream);">
+        <p style="font-family:var(--font-display);font-size:3.5rem;font-weight:900;color:var(--ink);letter-spacing:-0.04em;text-align:center;line-height:1;">Por<em style="color:var(--amber);font-style:italic;">Table</em></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section style="padding:0 0 var(--section-gap);">
+  <div class="problem-section">
+    <div class="container">
+      <p class="section-label" contenteditable="false">The Problem</p>
+      <h2 class="section-title" contenteditable="false">Life in the car is uncomfortable — and nobody's solved it.</h2>
+      <p class="section-sub" contenteditable="false">Millions of Pakistanis eat, study, and work from parked cars every day — with no flat surface, no support, and nothing designed for them.</p>
+      <div class="problem-grid">
+        <div class="problem-card fade-in">
+          <div class="problem-icon">🍜</div>
+          <h3 contenteditable="false">Food Spills on Back Seats</h3>
+          <p contenteditable="false">Holding a plate on your lap or balancing on the dashboard is awkward, unsafe, and messy — especially on long family trips.</p>
+        </div>
+        <div class="problem-card fade-in">
+          <div class="problem-icon">📚</div>
+          <h3 contenteditable="false">No Surface to Study or Work</h3>
+          <p contenteditable="false">Students and remote workers in parked cars have no flat surface — the dashboard is too far, the lap too unstable.</p>
+        </div>
+        <div class="problem-card fade-in">
+          <div class="problem-icon">💸</div>
+          <h3 contenteditable="false">Existing Solutions Cost Too Much</h3>
+          <p contenteditable="false">Imported car tables cost PKR 1,200–3,000+. Nothing comparable exists under PKR 1,200 in the Pakistani market.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCT / SOLUTION -->
+<section id="product">
+  <div class="container">
+    <div class="solution-wrap">
+      <div>
+        <p class="section-label" contenteditable="false">The Solution</p>
+        <h2 class="section-title" contenteditable="false">A sturdy table. In your car. Under PKR 400.</h2>
+        <p class="section-sub" contenteditable="false">PorTable is a fold-flat plywood board with a headrest strap that turns any back seat into a clean, stable workspace or dining surface — for the whole family.</p>
+        <div class="solution-features">
+          <div class="sol-feat fade-in">
+            <div class="sol-feat-icon">🪵</div>
+            <div>
+              <div class="sol-feat-title" contenteditable="false">Plywood Build — Actually Strong</div>
+              <div class="sol-feat-desc" contenteditable="false">Unlike cardboard alternatives, our plywood surface holds laptops, heavy meal trays, and daily use without bending or breaking.</div>
+            </div>
+          </div>
+          <div class="sol-feat fade-in">
+            <div class="sol-feat-icon">🛡️</div>
+            <div>
+              <div class="sol-feat-title" contenteditable="false">Raised Edges on 3 Sides</div>
+              <div class="sol-feat-desc" contenteditable="false">Stop spills before they happen. Three raised-edge borders keep food, drinks, and papers from sliding off the table.</div>
+            </div>
+          </div>
+          <div class="sol-feat fade-in">
+            <div class="sol-feat-icon">🔗</div>
+            <div>
+              <div class="sol-feat-title" contenteditable="false">Headrest Strap — Fits Most Pakistani Cars</div>
+              <div class="sol-feat-desc" contenteditable="false">One universal strap size fits the headrests of most common cars in Pakistan. Install in under 10 seconds, remove even faster.</div>
+            </div>
+          </div>
+          <div class="sol-feat fade-in">
+            <div class="sol-feat-icon">📐</div>
+            <div>
+              <div class="sol-feat-title" contenteditable="false">Folds Flat for Easy Storage</div>
+              <div class="sol-feat-desc" contenteditable="false">When not in use, PorTable folds completely flat and slides between your seat and door — out of the way, ready when you need it.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="solution-visual">
+          <div class="solution-tag" contenteditable="false">100% Local</div>
+          <div class="solution-visual-img" style="background:var(--cream);border-radius:16px;overflow:hidden;width:95%;height:65%;display:flex;align-items:center;justify-content:center;">
+            <img src="portable_product.jpg" alt="PorTable in car" style="width:100%;height:100%;object-fit:cover;object-position:center;border-radius:16px;display:block;" />
+          </div>
+          <div style="display:flex;gap:0.75rem;flex-wrap:wrap;justify-content:center;">
+            <div style="background:var(--amber-pale);border:1px solid rgba(201,123,46,0.2);padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;color:var(--amber);" contenteditable="false">Plywood</div>
+            <div style="background:var(--amber-pale);border:1px solid rgba(201,123,46,0.2);padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;color:var(--amber);" contenteditable="false">Fold-Flat</div>
+            <div style="background:var(--amber-pale);border:1px solid rgba(201,123,46,0.2);padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;color:var(--amber);" contenteditable="false">Raised Edges</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works" class="how-bg">
+  <div class="container">
+    <p class="section-label" contenteditable="false">How It Works</p>
+    <h2 class="section-title" contenteditable="false">Ready in 3 simple steps</h2>
+    <p class="section-sub" contenteditable="false">No tools, no setup time. PorTable mounts and dismounts in seconds so it's always ready when you need it.</p>
+    <div class="steps-grid">
+      <div class="step-card fade-in">
+        <div class="step-num">1</div>
+        <h3 contenteditable="false">Loop & Attach</h3>
+        <p contenteditable="false">Loop the headrest strap around the back-seat headrest and pull snug. The buckle locks it securely in under 10 seconds.</p>
+      </div>
+      <div class="step-card fade-in">
+        <div class="step-num">2</div>
+        <h3 contenteditable="false">Unfold & Adjust</h3>
+        <p contenteditable="false">Open the board flat. Position it at a comfortable angle for eating, studying, or using a laptop — it sits stable without wobbling.</p>
+      </div>
+      <div class="step-card fade-in">
+        <div class="step-num">3</div>
+        <h3 contenteditable="false">Use & Fold Away</h3>
+        <p contenteditable="false">Enjoy your meal, finish your work. When done, fold flat and slide behind the seat. Easy, clean, and always ready for next time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section id="usecases">
+  <div class="container">
+    <p class="section-label" contenteditable="false">Use Cases</p>
+    <h2 class="section-title" contenteditable="false">Built for real Pakistani life</h2>
+    <p class="section-sub" contenteditable="false">Whether you're on a road trip, waiting outside a tuition center, or finishing a work call — PorTable has a place in your car.</p>
+    <div class="usecases-grid">
+      <div class="usecase-card fade-in">
+        <div class="usecase-icon">🚗</div>
+        <div>
+          <div class="usecase-title" contenteditable="false">Family Road Trips</div>
+          <div class="usecase-desc" contenteditable="false">Give kids a proper surface for food, games, and activities on long drives. No more spills on upholstery or food on laps.</div>
+        </div>
+      </div>
+      <div class="usecase-card fade-in">
+        <div class="usecase-icon">📖</div>
+        <div>
+          <div class="usecase-title" contenteditable="false">Students in Parked Cars</div>
+          <div class="usecase-desc" contenteditable="false">Study or do homework while waiting outside school or academy. A stable surface makes it actually productive.</div>
+        </div>
+      </div>
+      <div class="usecase-card fade-in">
+        <div class="usecase-icon">💻</div>
+        <div>
+          <div class="usecase-title" contenteditable="false">Remote Workers & Freelancers</div>
+          <div class="usecase-desc" contenteditable="false">Parked in a quiet spot? PorTable turns your back seat into a mobile workstation. Laptop-sized and stable.</div>
+        </div>
+      </div>
+      <div class="usecase-card fade-in">
+        <div class="usecase-icon">🍱</div>
+        <div>
+          <div class="usecase-title" contenteditable="false">Quick Meals on the Go</div>
+          <div class="usecase-desc" contenteditable="false">Pick up a meal from a dhaba or restaurant and eat comfortably in your car — raised edges keep everything in place.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section class="reviews-bg">
+  <div class="container">
+    <p class="section-label" contenteditable="false">Reviews</p>
+    <h2 class="section-title" contenteditable="false">What early users are saying</h2>
+    <p class="section-sub" contenteditable="false">Tested with 10 university students — 7 out of 10 said they'd actually buy and use it regularly.</p>
+    <div class="reviews-grid">
+      <div class="review-card fade-in">
+        <div class="review-stars">★★★★★</div>
+        <div class="review-text" contenteditable="false">"I eat lunch in my car every day outside the office. This thing would genuinely save me so much hassle. I'd pay 400 for it easily."</div>
+        <div class="review-author">
+          <div class="review-avatar">AM</div>
+          <div>
+            <div class="review-name" contenteditable="false">Ahmed M.</div>
+            <div class="review-role" contenteditable="false">University Student, Lahore</div>
+          </div>
+        </div>
+      </div>
+      <div class="review-card fade-in">
+        <div class="review-stars">★★★★★</div>
+        <div class="review-text" contenteditable="false">"My kids always make a mess on road trips. Something like this would have saved my car seats a hundred times over. Where do I order?"</div>
+        <div class="review-author">
+          <div class="review-avatar">SF</div>
+          <div>
+            <div class="review-name" contenteditable="false">Sara F.</div>
+            <div class="review-role" contenteditable="false">Mother of Two, Rawalpindi</div>
+          </div>
+        </div>
+      </div>
+      <div class="review-card fade-in">
+        <div class="review-stars">★★★★☆</div>
+        <div class="review-text" contenteditable="false">"I work from my car sometimes between meetings. PKR 300-400 is more than fair for something this useful. Wish I had this earlier."</div>
+        <div class="review-author">
+          <div class="review-avatar">BK</div>
+          <div>
+            <div class="review-name" contenteditable="false">Bilal K.</div>
+            <div class="review-role" contenteditable="false">Freelancer, Islamabad</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="container" style="text-align:center;">
+    <p class="section-label" contenteditable="false">Pricing</p>
+    <h2 class="section-title" contenteditable="false">Simple, honest pricing</h2>
+    <p class="section-sub" style="margin:0 auto;" contenteditable="false">No hidden fees. No subscriptions. Just a great table at a fair price — built and priced for Pakistan.</p>
+    <div class="pricing-wrap">
+      <div class="pricing-card">
+        <div class="pricing-name" contenteditable="false">Standard</div>
+        <div class="pricing-desc" contenteditable="false">The essential PorTable — everything you need.</div>
+        <div class="pricing-price">
+          <span class="currency">PKR</span>
+          <span contenteditable="false">300</span>
+        </div>
+        <ul class="pricing-features">
+          <li contenteditable="false">Plywood flat board</li>
+          <li contenteditable="false">Universal headrest strap</li>
+          <li contenteditable="false">Fold-flat design</li>
+          <li contenteditable="false">Local pickup available</li>
+        </ul>
+        <a href="#contact" class="btn-primary-sm">Order Standard</a>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-featured-badge">Most Popular</div>
+        <div class="pricing-name">Premium</div>
+        <div class="pricing-desc">With raised edges and free delivery.</div>
+        <div class="pricing-price">
+          <span class="currency">PKR</span>
+          <span contenteditable="false">350</span>
+        </div>
+        <ul class="pricing-features">
+          <li contenteditable="false">Plywood flat board</li>
+          <li contenteditable="false">Universal headrest strap</li>
+          <li contenteditable="false">Fold-flat design</li>
+          <li contenteditable="false">Raised edges on 3 sides</li>
+          <li contenteditable="false">Free delivery within Rawalpindi/Islamabad</li>
+        </ul>
+        <a href="#contact" class="btn-primary-sm">Order Premium →</a>
+      </div>
+      <div class="pricing-card">
+        <div class="pricing-name" contenteditable="false">Bulk / Reseller</div>
+        <div class="pricing-desc" contenteditable="false">For shops, schools, or fleet owners.</div>
+        <div class="pricing-price">
+          <span class="currency" style="font-size:0.9rem;">Contact</span>
+        </div>
+        <ul class="pricing-features">
+          <li contenteditable="false">Minimum 10 units</li>
+          <li contenteditable="false">Custom branding option</li>
+          <li contenteditable="false">Discounted unit pricing</li>
+          <li contenteditable="false">Bulk delivery arranged</li>
+        </ul>
+        <a href="#contact" class="btn-primary-sm">Get a Quote</a>
+      </div>
+    </div>
+    <p style="margin-top:1.5rem;font-size:13px;color:var(--ink-muted);" contenteditable="false">💡 Nothing similar found under PKR 1,200 in Pakistan — we're the affordable option.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section style="background:var(--cream);padding:var(--section-gap) 2.5rem;">
+  <div class="container" style="text-align:center;">
+    <p class="section-label" contenteditable="false">FAQ</p>
+    <h2 class="section-title" contenteditable="false">Common questions</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-question">
+          <span contenteditable="false">Will this fit my car's headrest?</span>
+          <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner" contenteditable="false">PorTable's strap is designed to fit the headrest posts on most popular Pakistani cars — including Suzuki, Toyota, Honda, and Kia models. One size fits almost all standard headrests.</div>
+        </div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">
+          <span contenteditable="false">Is plywood strong enough for a laptop?</span>
+          <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner" contenteditable="false">Yes. Unlike cardboard prototypes, the plywood version is strong enough to comfortably hold a laptop, full meal tray, or books under normal use — without bending or flexing.</div>
+        </div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">
+          <span contenteditable="false">How do I clean it?</span>
+          <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner" contenteditable="false">Simply wipe with a damp cloth. The plywood surface is smooth and easy to clean. We recommend avoiding prolonged exposure to water to maintain the board's longevity.</div>
+        </div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">
+          <span contenteditable="false">Can I use it on the front seat too?</span>
+          <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner" contenteditable="false">PorTable is designed to attach to the back of a front-seat headrest, creating a surface for back-seat passengers. It works best in the rear passenger area.</div>
+        </div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">
+          <span contenteditable="false">How do I order and receive it?</span>
+          <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner" contenteditable="false">Fill in the contact form below or WhatsApp us directly. We'll confirm your order, arrange payment, and deliver within Rawalpindi/Islamabad for free (Premium tier). Outstation delivery available at actual courier cost.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="container">
+    <div class="about-wrap">
+      <div>
+        <p class="section-label" contenteditable="false">About Us</p>
+        <h2 class="section-title" contenteditable="false">Built by students, for everyday Pakistanis</h2>
+        <p class="section-sub" contenteditable="false">We're Team Startup Machine — a student startup team that spotted a gap nobody was filling. We believe great products don't have to be expensive, and that Pakistan deserves locally-made, locally-priced solutions for everyday problems.</p>
+        <div class="about-values">
+          <div class="about-val">
+            <div class="about-val-icon">🏠</div>
+            <div class="about-val-title" contenteditable="false">Made in Pakistan</div>
+            <div class="about-val-desc" contenteditable="false">Sourced, built, and sold locally.</div>
+          </div>
+          <div class="about-val">
+            <div class="about-val-icon">💰</div>
+            <div class="about-val-title" contenteditable="false">Affordable First</div>
+            <div class="about-val-desc" contenteditable="false">Under PKR 400, always.</div>
+          </div>
+          <div class="about-val">
+            <div class="about-val-icon">🧪</div>
+            <div class="about-val-title" contenteditable="false">Validated by Users</div>
+            <div class="about-val-desc" contenteditable="false">Tested with real people before launch.</div>
+          </div>
+          <div class="about-val">
+            <div class="about-val-icon">📈</div>
+            <div class="about-val-title" contenteditable="false">Growing Fast</div>
+            <div class="about-val-desc" contenteditable="false">Strong demand, minimal competition.</div>
+          </div>
+        </div>
+      </div>
+      <div class="about-visual">
+        <div class="about-stat">
+          <div class="about-stat-num" contenteditable="false">70%</div>
+          <div class="about-stat-text" contenteditable="false">of people tested said they'd buy and use PorTable regularly for eating in the car</div>
+        </div>
+        <div class="about-stat">
+          <div class="about-stat-num" contenteditable="false">PKR 0</div>
+          <div class="about-stat-text" contenteditable="false">similar alternative available under PKR 1,200 in the Pakistani market</div>
+        </div>
+        <div class="about-stat">
+          <div class="about-stat-num" contenteditable="false">3 ✓</div>
+          <div class="about-stat-text" contenteditable="false">validated assumptions — market need, willingness to pay PKR 300–400, and no close competitor</div>
+        </div>
+        <div class="about-stat">
+          <div class="about-stat-num" contenteditable="false">2025</div>
+          <div class="about-stat-text" contenteditable="false">founded by Team Startup Machine, currently in first production batch</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="order" style="padding:0 0 var(--section-gap);">
+  <div class="cta-section">
+    <p class="cta-label" contenteditable="false">Limited First Batch</p>
+    <h2 class="cta-title" contenteditable="false">Get Your PorTable<br>Before Stock Runs Out</h2>
+    <p class="cta-sub" contenteditable="false">First batch is limited. Reserve yours today at the launch price — no payment required upfront. We'll confirm your spot and reach out with delivery details.</p>
+    <div class="cta-actions">
+      <a href="#contact" class="btn-white">Reserve My PorTable →</a>
+      <a href="https://wa.me/92XXXXXXXXXX" class="btn-outline-white">WhatsApp Us</a>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="container">
+    <p class="section-label" contenteditable="false">Contact</p>
+    <h2 class="section-title" contenteditable="false">Order or get in touch</h2>
+    <div class="contact-grid">
+      <div class="contact-info">
+        <h3 contenteditable="false">We'd love to hear from you</h3>
+        <p contenteditable="false">Whether you want to place an order, ask a question, or discuss a bulk purchase — fill in the form or reach out directly. We typically respond within a few hours.</p>
+        <div class="contact-item">
+          <div class="contact-item-icon">📱</div>
+          <div class="contact-item-text">
+            <div class="contact-item-label">WhatsApp</div>
+            <div class="contact-item-val" contenteditable="false">+92 300 0000000</div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon">✉️</div>
+          <div class="contact-item-text">
+            <div class="contact-item-label">Email</div>
+            <div class="contact-item-val" contenteditable="false">zenvy@gmail.com</div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon">📍</div>
+          <div class="contact-item-text">
+            <div class="contact-item-label">Location</div>
+            <div class="contact-item-val" contenteditable="false">Rawalpindi / Islamabad, Pakistan</div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon">🕐</div>
+          <div class="contact-item-text">
+            <div class="contact-item-label">Response Time</div>
+            <div class="contact-item-val" contenteditable="false">Usually within 2–4 hours</div>
+          </div>
+        </div>
+      </div>
+      <div class="contact-form">
+        <div class="form-field">
+          <label>Full Name</label>
+          <input type="text" placeholder="Ahmed Khan" />
+        </div>
+        <div class="form-field">
+          <label>Phone / WhatsApp</label>
+          <input type="tel" placeholder="+92 300 0000000" />
+        </div>
+        <div class="form-field">
+          <label>I want to…</label>
+          <select>
+            <option>Order 1 Premium PorTable (PKR 350)</option>
+            <option>Order 1 Standard PorTable (PKR 300)</option>
+            <option>Order multiple / bulk</option>
+            <option>Ask a question</option>
+            <option>Discuss reselling</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Delivery Address</label>
+          <textarea rows="2" placeholder="Street, Area, City"></textarea>
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center;" onclick="alert('Thanks! We\'ll contact you on WhatsApp shortly to confirm your order.')">Submit Order Request →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <a href="#home" class="footer-logo">Zenvy</a>
+        <div class="footer-tagline" contenteditable="false">The smart car table for Pakistan. Under PKR 400.</div>
+      </div>
+      <ul class="footer-links">
+        <li><a href="#about">About</a></li>
+        <li><a href="#product">Product</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+    <div class="footer-bottom">
+      <span contenteditable="false">© 2025 Zenvy · Team Startup Machine · Rawalpindi, Pakistan</span>
+      <span class="footer-badge" contenteditable="false">🇵🇰 Proudly Local</span>
+    </div>
+  </div>
+</footer>
+
+<!-- EDIT TOGGLE BUTTON -->
+<button class="edit-badge" id="editBtn" onclick="toggleEdit()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  <span id="editLabel">Edit Content</span>
+</button>
+
+<script>
+  // ======= EDIT MODE =======
+  let editMode = false;
+  function toggleEdit() {
+    editMode = !editMode;
+    document.body.classList.toggle('editing-mode', editMode);
+    const btn = document.getElementById('editBtn');
+    const label = document.getElementById('editLabel');
+    btn.classList.toggle('editing', editMode);
+    label.textContent = editMode ? 'Done Editing ✓' : 'Edit Content';
+    document.querySelectorAll('[contenteditable]').forEach(el => {
+      el.setAttribute('contenteditable', editMode ? 'true' : 'false');
+    });
+  }
+
+  // ======= HAMBURGER =======
+  document.getElementById('hamburger').addEventListener('click', function() {
+    document.getElementById('navlinks').classList.toggle('open');
+  });
+
+  // ======= FAQ =======
+  document.querySelectorAll('.faq-question').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const item = this.closest('.faq-item');
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+
+  // ======= FADE IN =======
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+  // ======= NAV ACTIVE =======
+  window.addEventListener('scroll', () => {
+    const nav = document.querySelector('nav');
+    nav.style.boxShadow = window.scrollY > 20 ? '0 2px 20px rgba(26,22,17,0.08)' : 'none';
+  });
+</script>
+</body>
+</html>
